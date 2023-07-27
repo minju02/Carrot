@@ -1,0 +1,125 @@
+biz 테이블에 biz_img, biz_category_no (FK) 컬럼 추가 
+biz 테이블에 biz_dangol_plus , biz_info  컬럼 추가
+
+biz_profile-img 테이블 삭제
+biz_category 테이블 추가 
+
+product 테이블에 product_hide number default 0 not null 추가해주세요(0=숨김x, 1=숨김)
+coupon table에서 coupon_date 컬럼 데이터 타입을 varchar2 에서 date 로 바꿈
+
+biz_review 테이블 biz_review_category 컬럼 데이터 타입 varchar2(50) 으로 바꿈 vo도 수정 int -> String
+biz_menu 테이블에 biz_menu_img  - varchar2(50) 컬럼 추가  - > biz_menuVO 도 수정 예정
+
+--------------------------------------------------------------------------------------------------------------------------
+
+career 테이블 수정
+alter table career drop constraint fk_career_alba_seeker_no;
+alter table career rename column alba_seeker_no to person_no;
+alter table career add constraint fk_career_person_no foreign key(person_no) references person(person_no);
+
+drop table report_alba;
+create table report_content(
+report_content_no number primary key,
+category_report_content_no number not null,
+product_no number not null,
+person_no number not null,
+CONSTRAINT fk_report_content_person_no FOREIGN KEY (person_no) REFERENCES person (person_no),
+CONSTRAINT fk_report_content_category_report_content_no FOREIGN KEY (category_report_content_no) REFERENCES category_report_content (category_report_content_no)
+);
+drop table category_report_alba;
+drop sequence category_report_alba_seq;
+
+drop sequence report_alba_seq;
+Drop table report_content;
+drop sequence report_content_seq;
+-- 시퀀스, 게시글 신고 카테고리 선택, 신고하는 게시글 시퀀스, 신고하는 사람 시퀀스
+drop table report_alba;
+create table report_content(
+report_content_no number primary key,
+category_report_content_no number not null,
+product_no number not null,
+person_no number not null,
+CONSTRAINT fk_report_content_person_no FOREIGN KEY (person_no) REFERENCES person (person_no),
+CONSTRAINT fk_report_content_category_report_content_no FOREIGN KEY (category_report_content_no) REFERENCES category_report_content (category_report_content_no)
+);
+
+create sequence report_content_seq nocache;
+
+-- 알바 신고 카테고리 테이블
+create table category_report_alba (
+category_report_alba_no number primary key,
+category_report_alba_content varchar2(300) not null
+);
+
+create sequence category_report_alba_seq nocache;
+
+insert into category_report_alba values(1, '중복/도배를 해요');
+insert into category_report_alba values(2, '최저 임금을 지키지 않아요');
+insert into category_report_alba values(3, '근로기준법을 위반해요');
+insert into category_report_alba values(4, '고용 차별이 있어요');
+insert into category_report_alba values(5, '근무지가 내용과 달라요');
+insert into category_report_alba values(6, '유요 인력 중개 업체예요');
+insert into category_report_alba values(7, '불법/불건전 업체예요');
+insert into category_report_alba values(8, '자금세탁/보이스피싱 업무예요');
+insert into category_report_alba values(9, '구직글이에요');
+insert into category_report_alba values(10, '다른 문제가 있어요(기타)');
+
+-- 알바 신고하기
+create table report_alba(
+report_alba_no number primary key,
+category_report_alba_no number not null,
+person_no number not null,
+CONSTRAINT fk_report_alba_person_no FOREIGN KEY (person_no) REFERENCES person (person_no),
+CONSTRAINT fk_report_alba_category_report_alba_no FOREIGN KEY (category_report_alba_no) REFERENCES category_report_alba (category_report_alba_no)
+);
+
+create sequence report_alba_seq nocache;
+
+
+-- 사용자 신고
+drop sequence report_content_seq;
+drop sequence report_person_seq;
+create sequence report_content_seq;
+create sequence report_person_seq;
+
+drop table report_person;
+
+-- 사용자신고번호, 사용자신고카테고리번호,신고받은사용자번호,신고한사용자번호
+create table report_person(
+report_person_no number primary key,
+category_report_person_no number not null,
+reported_person_no number not null,
+person_no number not null,
+CONSTRAINT fk_report_person_reported_person_no FOREIGN KEY (reported_person_no) REFERENCES person (person_no),
+CONSTRAINT fk_report_person_person_no FOREIGN KEY (person_no) REFERENCES person (person_no),
+CONSTRAINT fk_report_person_category_report_person_no FOREIGN KEY (category_report_person_no) REFERENCES category_report_person (category_report_person_no)
+);
+
+alter table alba drop COLUMN alba_address;
+alter table alba drop COLUMN link_alba_job_no;
+
+alter table alba add city_no number;
+alter table alba add gu_no number;
+alter table alba add dong_no number;
+
+alter table alba add CONSTRAINT fk_city_no foreign key(city_no) references city (city_no);
+alter table alba add CONSTRAINT fk_gu_no foreign key(gu_no) references gu (gu_no);
+alter table alba add CONSTRAINT fk_dong_no foreign key(dong_no) references dong (dong_no);
+
+create table alba_seeker_feature_category(
+alba_seeker_feature_category_no number primary key,
+alba_seeker_feature_category_content varchar2(300) not null
+);
+
+alter table alba_seeker add alba_seeker_feature_category_no number;
+alter table alba_seeker add constraint fk_alba_seeker_feature_category_no foreign key(alba_seeker_feature_category_no) references alba_seeker_feature_category (alba_seeker_feature_category_no);
+
+insert into alba_seeker_feature_category values(1, '성실해요');
+insert into alba_seeker_feature_category values(2, '친절해요');
+insert into alba_seeker_feature_category values(3, '일처리가 꼼꼼해요');
+insert into alba_seeker_feature_category values(4, '적극적이에요');
+insert into alba_seeker_feature_category values(5, '지각하지 않아요');
+insert into alba_seeker_feature_category values(6, '일을 빨리 배우는 편이에요');
+insert into alba_seeker_feature_category values(7, '체력이 좋아요');
+insert into alba_seeker_feature_category values(8, '손이 빨라요');
+insert into alba_seeker_feature_category values(9, '깔끔하고 청결해요');

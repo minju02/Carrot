@@ -1,0 +1,1028 @@
+06/12
+5:00 민주 
+	로그인, 회원가입 합침
+	중고거래에서 시, 구, 동 선택에 따른 중고 물품 검색
+	내 물건 팔기 구현 중
+
+
+06/13
+20:00 준명
+	로그인, 회원가입, 마이페이지 합침
+	마이페이지 내에서 프로필 수정, 탈퇴 기능 구현
+
+
+06/13
+21:00 재빈
+	동네가게 만들기 폼 시,구,동 ajax 구현 //가게 만들기, (알바, 중고거래) 글쓰기, 회원가입 시에만 쓸거임 
+	회원가입 폼 수정중(이메일 인증 구현), 
+common
+	pattern
+mapper
+	biz , city , gu, dong
+controller
+	login, biz
+service
+	biz, person
+dao
+	city,gu,dong 
+jsp
+	person/join/joinform
+	biz/*
+
+
+6/14
+재빈
+
+database 수정
+biz 테이블에 biz_img, biz_category_no (FK) 컬럼 추가 
+biz_profile-img 테이블 삭제
+biz_category 테이블 추가 
+
+
+6/14
+준명
+
+탈퇴회원 로그인제한, 탈퇴기능 수정(person_state -> 1 = 일반, 2 = 탈퇴)
+모두꺼 합친거 최신화
+
+6/15
+재빈
+비즈 쪽 싹 
+database 수정
+biz 테이블에 biz_dangol_plus , biz_info  컬럼 추가
+
+6/15
+아스트로보이
+내 관심목록 완성ㅋ (제목 클릭 -> 상세화면), 내 동네 설정(주소 수정)
+
+6/16
+민주
+파일 업로드 + 관심 상품 등록/취소
+
+파일 올리기
+Controller
+
+	// 내 물건 팔기 글쓰기 처리
+	@RequestMapping("product/write/write")
+	public String write(Model model,
+			@RequestParam(value = "product_img", required = false) List<MultipartFile> imageList,
+			HttpServletRequest request) throws IllegalStateException, IOException {
+		
+		String product_name = request.getParameter("product_name");
+		String product_content = request.getParameter("product_content");
+		int product_price = Integer.parseInt(request.getParameter("product_price"));
+		int category_product_no = Integer.parseInt(request.getParameter("category_product"));
+		
+		int person_no = (Integer) request.getSession().getAttribute("login");
+		
+		int city_no = Integer.parseInt(request.getParameter("city_no"));
+		int gu_no = Integer.parseInt(request.getParameter("gu_no"));
+		int dong_no = Integer.parseInt(request.getParameter("dong_no"));
+		
+		
+		ProductVO vo = new ProductVO(product_name, product_content, product_price, category_product_no, person_no, city_no, gu_no, dong_no);
+		
+				
+		String msg = "";
+		String url = "";
+		
+		if(productService.insertProduct(vo)) {
+			
+			int no = productService.selectProductNo();
+
+			for(MultipartFile file : imageList) {
+				String originalName = file.getOriginalFilename();
+				String fileName = originalName.substring(originalName.lastIndexOf("\\") + 1);
+				
+				int seq = productService.getProduct_ImgSeq() + 1;
+				String uuid = seq + "img";
+				
+				String savefileName = "C:\\Users\\minju\\Dropbox\\Kimminju\\Spring\\WorkSpace\\Carrot\\src\\main\\webapp\\resources\\image" + File.separator + uuid + "_" + fileName ;
+				
+				Path savePath = Paths.get(savefileName);				
+				
+				try {
+					
+					FileCopyUtils.copy(file.getInputStream(), new FileOutputStream(savePath.toFile()));
+					
+					String content = uuid + "_" + fileName;
+					
+					Product_ImgVO imgvo = new Product_ImgVO(content, no);
+					productService.insertProduct_Img(imgvo);
+					
+				}catch(IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+			
+			msg = "내 물건 팔기 등록 완료";
+			url = "/carrot/product/detail?product_no="+no;
+		}else {
+			msg = "내 물건 팔기 등록 실패 ";
+			url = "history.back()";
+		}
+		
+		model.addAttribute("msg", msg);
+		model.addAttribute("url", url);
+		
+		return ViewPath.PRODUCT + "write/result.jsp";
+	}
+
+jsp
+<tr>
+	<th>사진</th>
+	<td colspan= "3"><input type="file" max="10" multiple="multiple" name = "product_img" accept="image/*"></td>
+</tr>
+
+이미지 불러오기
+Controller
+
+	// 중고 거래 상품 디테일
+	@RequestMapping("/product/detail")
+	public String detail(Model model, int product_no) {
+		
+		Map<String, Object> vo = productService.selectProduct(product_no);
+		List<Map<String, Object>> map = productService.selectSellItem();
+		List<Product_ImgVO> img = productService.selectProduct_Img(product_no);
+		
+		model.addAttribute("map", map);
+		model.addAttribute("vo", vo);
+		model.addAttribute("img", img);
+		
+		return ViewPath.PRODUCT + "detail.jsp";
+	}
+
+jsp
+	<c:forEach var="img" items="${img }">
+	  <img class="mySlides" src="resources/image/${img.product_img_content }" style="width:100%">	
+	</c:forEach>
+
+상품 관심 등록/취소
+
+Controller
+
+6/16
+아스트로보이
+
+관심목록 -완-, 나의 판매내역 90% (product_check 0=판매중, 1=예약중, 2=판매완료)
+product 테이블에 product_hide number default 0 not null 추가해주세요(0=숨김x, 1=숨김)
+
+
+6/16 
+재빈
+coupon table에서 coupon_date 컬럼 데이터 타입을 varchar2 에서 date 로 바꿈
+
+6/16 
+재빈
+비즈 소식 글쓰기 구현 리스트 뽑는 건 아직 , ,
+소식에 쿠폰 첨가도 아직
+비즈 쿠폰 구현 
+비즈 프로필 관심 버튼 구현 
+
+6월 17
+김기범
+아직 알바중 
+게시물 선택시 디테일 화면 완료
+글쓰기 화면 form구성 완료
+
+alba 테이블 시,구,동,이미지 fk / create문 메모장에 변경해두었어요 
+각자 추가해주세요
+
+6/18
+민주
+게시글 신고 테이블 수정 + 사용자 신고 테이블 수정 + 알바 신고하기, 알바 신고 카테고리 테이블 추가
+게시글 신고 vo 수정 + 알바 신고, 알바 신고 카테고리 vo 추가
+
+drop table category_report_alba;
+drop sequence category_report_alba_seq;
+
+drop sequence report_alba_seq;
+Drop table report_content;
+drop sequence report_content_seq;
+
+
+-- 시퀀스, 게시글 신고 카테고리 선택, 신고하는 게시글 시퀀스, 신고하는 사람 시퀀스
+drop table report_alba;
+create table report_content(
+report_content_no number primary key,
+category_report_content_no number not null,
+product_no number not null,
+person_no number not null,
+CONSTRAINT fk_report_content_person_no FOREIGN KEY (person_no) REFERENCES person (person_no),
+CONSTRAINT fk_report_content_category_report_content_no FOREIGN KEY (category_report_content_no) REFERENCES category_report_content (category_report_content_no)
+);
+
+create sequence report_content_seq nocache;
+
+-- 알바 신고 카테고리 테이블
+create table category_report_alba (
+category_report_alba_no number primary key,
+category_report_alba_content varchar2(300) not null
+);
+
+create sequence category_report_alba_seq nocache;
+
+insert into category_report_alba values(1, '중복/도배를 해요');
+insert into category_report_alba values(2, '최저 임금을 지키지 않아요');
+insert into category_report_alba values(3, '근로기준법을 위반해요');
+insert into category_report_alba values(4, '고용 차별이 있어요');
+insert into category_report_alba values(5, '근무지가 내용과 달라요');
+insert into category_report_alba values(6, '유요 인력 중개 업체예요');
+insert into category_report_alba values(7, '불법/불건전 업체예요');
+insert into category_report_alba values(8, '자금세탁/보이스피싱 업무예요');
+insert into category_report_alba values(9, '구직글이에요');
+insert into category_report_alba values(10, '다른 문제가 있어요(기타)');
+
+-- 알바 신고하기
+create table report_alba(
+report_alba_no number primary key,
+category_report_alba_no number not null,
+person_no number not null,
+CONSTRAINT fk_report_alba_person_no FOREIGN KEY (person_no) REFERENCES person (person_no),
+CONSTRAINT fk_report_alba_category_report_alba_no FOREIGN KEY (category_report_alba_no) REFERENCES category_report_alba (category_report_alba_no)
+);
+
+create sequence report_alba_seq nocache;
+
+
+-- 사용자 신고
+drop sequence report_content_seq;
+drop sequence report_person_seq;
+create sequence report_content_seq;
+create sequence report_person_seq;
+
+drop table report_person;
+
+-- 사용자신고번호, 사용자신고카테고리번호,신고받은사용자번호,신고한사용자번호
+create table report_person(
+report_person_no number primary key,
+category_report_person_no number not null,
+reported_person_no number not null,
+person_no number not null,
+CONSTRAINT fk_report_person_reported_person_no FOREIGN KEY (reported_person_no) REFERENCES person (person_no),
+CONSTRAINT fk_report_person_person_no FOREIGN KEY (person_no) REFERENCES person (person_no),
+CONSTRAINT fk_report_person_category_report_person_no FOREIGN KEY (category_report_person_no) REFERENCES category_report_person (category_report_person_no)
+);
+
+
+
+알바 카테고리 vo추가
+package vo.category_report_alba;
+
+public class Category_Report_AlbaVO{
+	
+	private int category_report_alba_no; // 알바 신고 카테고리 번호
+	private String category_report_alba_content; // 알바 신고 카테고리명
+	
+	public Category_Report_AlbaVO(){
+		
+	}
+	
+	public Category_Report_AlbaVO(int category_report_alba_no, String category_report_alba_content) {
+		this.category_report_alba_no=category_report_alba_no;
+		this.category_report_alba_content=category_report_alba_content;
+	}
+	
+	public Category_Report_AlbaVO(String category_report_alba_content) {
+		this.category_report_alba_content=category_report_alba_content;
+	}
+
+	public int getCategory_report_alba_no() {
+		return category_report_alba_no;
+	}
+
+	public void setCategory_report_alba_no(int category_report_alba_no) {
+		this.category_report_alba_no = category_report_alba_no;
+	}
+
+	public String getCategory_report_alba_content() {
+		return category_report_alba_content;
+	}
+
+	public void setCategory_report_alba_content(String category_report_alba_content) {
+		this.category_report_alba_content = category_report_alba_content;
+	}
+
+}
+
+게시글 신고vo 수정
+package vo.report_content;
+
+public class Report_ContentVO {
+
+	private int report_content_no; // 게시글 신고 번호
+	private int category_report_content_no; // 게시글 신고 카테고리 번호
+	private int product_no; // 신고할 게시글 번호
+	private int person_no; // 회원 번호
+	
+	public Report_ContentVO() {
+	
+	}
+	
+	public Report_ContentVO(int report_content_no, int category_report_content_no, int product_no, int person_no) {
+		this.report_content_no=report_content_no;
+		this.category_report_content_no=category_report_content_no;
+		this.product_no=product_no;
+		this.person_no=person_no;
+	}
+
+	public Report_ContentVO(int category_report_content_no, int product_no, int person_no) {
+		this.category_report_content_no=category_report_content_no;
+		this.product_no=product_no;
+		this.person_no=person_no;
+	}
+
+	public int getReport_content_no() {
+		return report_content_no;
+	}
+
+	public void setReport_content_no(int report_content_no) {
+		this.report_content_no = report_content_no;
+	}
+
+	public int getCategory_report_content_no() {
+		return category_report_content_no;
+	}
+
+	public void setCategory_report_content_no(int category_report_content_no) {
+		this.category_report_content_no = category_report_content_no;
+	}
+	
+	public int getProduct_no() {
+		return product_no;
+	}
+	
+	public void setProduct_no(int product_no) {
+		this.product_no=product_no;
+	}
+
+	public int getPerson_no() {
+		return person_no;
+	}
+
+	public void setPerson_no(int person_no) {
+		this.person_no = person_no;
+	}
+}
+
+// 사용자 신고 vo 수정
+package vo.report_person;
+
+public class Report_PersonVO {
+
+	private int report_person_no; // 사용자 신고 번호
+	private int category_report_person_no; // 사용자 신고 카테고리 번호
+	private int reported_person_no; // 신고당한 회원 번호
+	private int person_no; // 신고한 회원 번호
+	
+	public Report_PersonVO() {
+		
+	}
+	
+	public Report_PersonVO(int report_person_no, int category_report_person_no, int reported_person_no, int person_no) {
+		this.report_person_no=report_person_no;
+		this.category_report_person_no=category_report_person_no;
+		this.reported_person_no=reported_person_no;
+		this.person_no=person_no;
+	}
+	
+	public Report_PersonVO(int category_report_person_no, int reported_person_no, int person_no) {
+		this.category_report_person_no=category_report_person_no;
+		this.reported_person_no=reported_person_no;
+		this.person_no=person_no;
+	}
+
+	public int getReport_person_no() {
+		return report_person_no;
+	}
+
+	public void setReport_person_no(int report_person_no) {
+		this.report_person_no = report_person_no;
+	}
+
+	public int getCategory_report_person_no() {
+		return category_report_person_no;
+	}
+
+	public void setCategory_report_person_no(int category_report_person_no) {
+		this.category_report_person_no = category_report_person_no;
+	}
+	
+	public int getReported_person_no() {
+		return reported_person_no;
+	}
+	
+	public void setReported_person_no(int reported_person_no) {
+		this.reported_person_no=reported_person_no;
+	}
+
+	public int getPerson_no() {
+		return person_no;
+	}
+
+	public void setPerson_no(int person_no) {
+		this.person_no = person_no;
+	}
+}
+
+알바 테이블 수정
+ --  테이블 alba 
+CREATE TABLE alba (
+  alba_no NUMBER PRIMARY KEY,
+  person_no NUMBER NOT NULL,
+  alba_check_short NUMBER NOT NULL,
+  alba_date VARCHAR2(1000) NOT NULL,
+  alba_time_start VARCHAR2(45) NOT NULL,
+  alba_time_end VARCHAR2(45) NOT NULL,
+  alba_check_deal NUMBER NOT NULL,
+  alba_wage VARCHAR2(15) NOT NULL,
+  alba_content VARCHAR2(6000) NOT NULL,
+  alba_check_store NUMBER NOT NULL,
+  alba_tel VARCHAR2(15) NOT NULL,
+  alba_check_post NUMBER NOT NULL,
+  alba_time_post DATE NOT NULL,
+  city_no NUMBER NOT NULL,
+  gu_no NUMBER NOT NULL,
+  dong_no NUMBER NOT NULL,
+  CONSTRAINT fk_alba_person_no FOREIGN KEY (person_no) REFERENCES person (person_no),
+  CONSTRAINT fk_alba_city_no FOREIGEN KEY (city_no) REFERENCES city (city_no),
+  CONSTRAINT fk_alba_gu_no FOREIGEN KEY (gu_no) REFERENCES gu (gu_no),
+  CONSTRAINT fk_alba_dong_no FOREIGEN KEY (dong_no) REFERENCES dong (dong_no),
+  CONSTRAINT fk_alba_link_alba_job_no FOREIGN KEY (link_alba_job_no) REFERENCES link_alba_job (link_alba_job_no)
+);
+
+--이거 입력하3
+alter table alba drop COLUMN alba_address;
+alter table alba drop COLUMN link_alba_job_no;
+
+alter table alba add city_no number;
+alter table alba add gu_no number;
+alter table alba add dong_no number;
+
+alter table alba add CONSTRAINT fk_city_no foreign key(city_no) references city (city_no);
+alter table alba add CONSTRAINT fk_gu_no foreign key(gu_no) references gu (gu_no);
+alter table alba add CONSTRAINT fk_dong_no foreign key(dong_no) references dong (dong_no);
+
+
+// alba vo 수정
+package vo.alba;
+
+import java.sql.Date;
+
+public class AlbaVO {
+
+	private int alba_no; // 알바 글쓰기 번호
+	private int person_no; // 회원 번호
+	private int alba_check_short; // 알바 단기 여부
+	private String alba_date; // 알바 날짜 혹은 요일
+	private String alba_time_start; // 알바 시작 시간
+	private String alba_time_end; // 알바 종료 시간
+	private int alba_check_deal; // 알바 협의 가능 여부
+	private String alba_wage; // 알바 임금
+	private String alba_content; // 알바 상세 내용
+	private int alba_check_store; // 알바 가게 여부
+	private String alba_tel; // 알바 연락처
+	private int alba_check_post; // 알바 게시 승인 여부
+	private Date alba_time_post; // 알바 게시 시간
+	private int city_no; // 알바 하는 장소 시
+	private int gu_no; // 알바 하는 장소 구
+	private int dong_no; // 알바 하는 장소 동
+	
+	public AlbaVO() {
+		
+	}
+	
+	public AlbaVO(int alba_no, int person_no, int alba_check_short, String alba_date, String alba_time_start, String alba_time_end, int alba_check_deal, String alba_wage, String alba_content, int alba_check_store, String alba_tel, int alba_check_post, Date alba_time_post, int city_no, int gu_no, int dong_no) {
+		this.alba_no=alba_no;
+		this.person_no=person_no;
+		this.alba_check_short=alba_check_short;
+		this.alba_date=alba_date;
+		this.alba_time_start=alba_time_start;
+		this.alba_time_end=alba_time_end;
+		this.alba_check_deal=alba_check_deal;
+		this.alba_wage=alba_wage;
+		this.alba_content=alba_content;
+		this.alba_check_store=alba_check_store;
+		this.alba_tel=alba_tel;
+		this.alba_check_post=alba_check_post;
+		this.alba_time_post=alba_time_post;
+		this.city_no=city_no;
+		this.gu_no=gu_no;
+		this.dong_no=dong_no;
+	}
+
+	public AlbaVO(int person_no, int alba_check_short, String alba_date, String alba_time_start, String alba_time_end, int alba_check_deal, String alba_wage, String alba_content, int alba_check_store, String alba_tel, int alba_check_post, Date alba_time_post, int city_no, int gu_no, int dong_no) {
+		this.person_no=person_no;
+		this.link_alba_job_no=link_alba_job_no;
+		this.alba_check_short=alba_check_short;
+		this.alba_date=alba_date;
+		this.alba_time_start=alba_time_start;
+		this.alba_time_end=alba_time_end;
+		this.alba_check_deal=alba_check_deal;
+		this.alba_wage=alba_wage;
+		this.alba_content=alba_content;
+		this.alba_check_store=alba_check_store;
+		this.alba_tel=alba_tel;
+		this.alba_check_post=alba_check_post;
+		this.alba_time_post=alba_time_post;
+		this.city_no=city_no;
+		this.gu_no=gu_no;
+		this.dong_no=dong_no;
+	}
+
+	public int getAlba_no() {
+		return alba_no;
+	}
+
+	public void setAlba_no(int alba_no) {
+		this.alba_no = alba_no;
+	}
+
+	public int getPerson_no() {
+		return person_no;
+	}
+
+	public void setPerson_no(int person_no) {
+		this.person_no = person_no;
+	}
+
+	public int getAlba_check_short() {
+		return alba_check_short;
+	}
+
+	public void setAlba_check_short(int alba_check_short) {
+		this.alba_check_short = alba_check_short;
+	}
+
+	public String getAlba_date() {
+		return alba_date;
+	}
+
+	public void setAlba_date(String alba_date) {
+		this.alba_date = alba_date;
+	}
+
+	public String getAlba_time_start() {
+		return alba_time_start;
+	}
+
+	public void setAlba_time_start(String alba_time_start) {
+		this.alba_time_start = alba_time_start;
+	}
+
+	public String getAlba_time_end() {
+		return alba_time_end;
+	}
+
+	public void setAlba_time_end(String alba_time_end) {
+		this.alba_time_end = alba_time_end;
+	}
+
+	public int getAlba_check_deal() {
+		return alba_check_deal;
+	}
+
+	public void setAlba_check_deal(int alba_check_deal) {
+		this.alba_check_deal = alba_check_deal;
+	}
+
+	public String getAlba_wage() {
+		return alba_wage;
+	}
+
+	public void setAlba_wage(String alba_wage) {
+		this.alba_wage = alba_wage;
+	}
+
+	public String getAlba_content() {
+		return alba_content;
+	}
+
+	public void setAlba_content(String alba_content) {
+		this.alba_content = alba_content;
+	}
+
+	public int getAlba_check_store() {
+		return alba_check_store;
+	}
+
+	public void setAlba_check_store(int alba_check_store) {
+		this.alba_check_store = alba_check_store;
+	}
+
+	public String getAlba_tel() {
+		return alba_tel;
+	}
+
+	public void setAlba_tel(String alba_tel) {
+		this.alba_tel = alba_tel;
+	}
+
+	public int getAlba_check_post() {
+		return alba_check_post;
+	}
+
+	public void setAlba_check_post(int alba_check_post) {
+		this.alba_check_post = alba_check_post;
+	}
+
+	public Date getAlba_time_post() {
+		return alba_time_post;
+	}
+
+	public void setAlba_time_post(Date alba_time_post) {
+		this.alba_time_post = alba_time_post;
+	}
+
+	public int getCity_no() {
+		return city_no;
+	}
+
+	public void setCity_no(int city_no) {
+		this.city_no = city_no;
+	}
+
+	public int getGu_no() {
+		return gu_no;
+	}
+
+	public void setGu_no(int gu_no) {
+		this.gu_no = gu_no;
+	}
+
+	public int getDong_no() {
+		return dong_no;
+	}
+
+	public void setDong_no(int dong_no) {
+		this.dong_no = dong_no;
+	}
+	
+}
+
+6/19
+만듀
+alba_seeker 테이블 수정 및 alba_seeker_feature_category 테이블 추가
+
+create table alba_seeker_feature_category(
+alba_seeker_feature_category_no number primary key,
+alba_seeker_feature_category_content varchar2(300) not null
+)
+
+alter table alba_seeker add alba_seeker_feature_category_no number;
+alter table alba_seeker add constraint fk_alba_seeker_feature_category_no foreign key(alba_seeker_feature_category_no) references alba_seeker_feature_category (alba_seeker_feature_category_no);
+
+insert into alba_seeker_feature_category values(1, '성실해요');
+insert into alba_seeker_feature_category values(2, '친절해요');
+insert into alba_seeker_feature_category values(3, '일처리가 꼼꼼해요');
+insert into alba_seeker_feature_category values(4, '적극적이에요');
+insert into alba_seeker_feature_category values(5, '지각하지 않아요');
+insert into alba_seeker_feature_category values(6, '일을 빨리 배우는 편이에요');
+insert into alba_seeker_feature_category values(7, '체력이 좋아요');
+insert into alba_seeker_feature_category values(8, '손이 빨라요');
+insert into alba_seeker_feature_category values(9, '깔끔하고 청결해요');
+
+--복붙 ㄱㄱ
+
+alba_seeker_feature_category vo임
+
+package vo.alba_seeker_feature_category;
+
+public class Alba_Seeker_Feature_CategoryVO {
+
+	private int alba_seeker_feature_category_no; // 알바 대표 특징 번호
+	private String alba_seeker_feature_category_content; // 알바 대표 특징 내용
+	
+	public Alba_Seeker_Feature_CategoryVO() {
+		
+	}
+	
+	public Alba_Seeker_Feature_CategoryVO(int alba_seeker_feature_category_no, String alba_seeker_feature_category_content) {
+		this.alba_seeker_feature_category_no=alba_seeker_feature_category_no;
+		this.alba_seeker_feature_category_content=alba_seeker_feature_category_content;
+	}
+	
+	public Alba_Seeker_Feature_CategoryVO(String alba_seeker_feature_category_content) {
+		this.alba_seeker_feature_category_content=alba_seeker_feature_category_content;
+	}
+
+	public int getAlba_seeker_feature_category_no() {
+		return alba_seeker_feature_category_no;
+	}
+
+	public void setAlba_seeker_feature_category_no(int alba_seeker_feature_category_no) {
+		this.alba_seeker_feature_category_no = alba_seeker_feature_category_no;
+	}
+
+	public String getAlba_seeker_feature_category_content() {
+		return alba_seeker_feature_category_content;
+	}
+
+	public void setAlba_seeker_feature_category_content(String alba_seeker_feature_category_content) {
+		this.alba_seeker_feature_category_content = alba_seeker_feature_category_content;
+	}
+	
+}
+
+alba_seeker vo 수정
+package vo.alba_seeker;
+
+import java.sql.Date;
+
+public class Alba_SeekerVO {
+
+	private int alba_seeker_no; // 알바 프로필 번호
+	private int person_no; // 회원 번호
+	private String alba_seeker_img; // 알바 프로필 사진
+	private String alba_seeker_nick; // 알바 닉네임
+	private int alba_seeker_love; // 받은 추천 수
+	private int alba_seeker_age; // 나이
+	private String alba_seeker_tel; // 연락처
+	private String alba_seeker_introduce; // 자기소개
+	private String alba_seeker_gender; // 성별
+	private Date alba_seeker_date; // 알바 프로필 생성 날짜
+	private int alba_seeker_hirecount; // 채용 확정 횟수
+	private int alba_seeker_feature_category_no; // 알바 대표 특징 번호
+	
+	public Alba_SeekerVO() {
+		
+	}
+	
+	public Alba_SeekerVO(int alba_seeker_no, int person_no, String alba_seeker_img, String alba_seeker_nick, int alba_seeker_love, int alba_seeker_age, String alba_seeker_tel, String alba_seeker_introduce, String alba_seeker_gender, Date alba_seeker_date, int alba_seeker_hirecount, int alba_seeker_feature_category_no) {
+		this.alba_seeker_no=alba_seeker_no;
+		this.person_no=person_no;
+		this.alba_seeker_img=alba_seeker_img;
+		this.alba_seeker_nick=alba_seeker_nick;
+		this.alba_seeker_love=alba_seeker_love;
+		this.alba_seeker_age=alba_seeker_age;
+		this.alba_seeker_tel=alba_seeker_tel;
+		this.alba_seeker_introduce=alba_seeker_introduce;
+		this.alba_seeker_gender=alba_seeker_gender;
+		this.alba_seeker_date=alba_seeker_date;
+		this.alba_seeker_hirecount=alba_seeker_hirecount;
+		this.alba_seeker_feature_category_no=alba_seeker_feature_category_no;
+	}
+
+	public Alba_SeekerVO(int person_no, String alba_seeker_img, String alba_seeker_nick, int alba_seeker_love, int alba_seeker_age, String alba_seeker_tel, String alba_seeker_introduce, String alba_seeker_gender, Date alba_seeker_date, int alba_seeker_hirecount, int alba_seeker_feature_category_no) {
+		this.person_no=person_no;
+		this.alba_seeker_img=alba_seeker_img;
+		this.alba_seeker_nick=alba_seeker_nick;
+		this.alba_seeker_love=alba_seeker_love;
+		this.alba_seeker_age=alba_seeker_age;
+		this.alba_seeker_tel=alba_seeker_tel;
+		this.alba_seeker_introduce=alba_seeker_introduce;
+		this.alba_seeker_gender=alba_seeker_gender;
+		this.alba_seeker_date=alba_seeker_date;
+		this.alba_seeker_hirecount=alba_seeker_hirecount;
+		this.alba_seeker_feature_category_no=alba_seeker_feature_category_no;
+	}
+
+	public int getAlba_seeker_no() {
+		return alba_seeker_no;
+	}
+
+	public void setAlba_seeker_no(int alba_seeker_no) {
+		this.alba_seeker_no = alba_seeker_no;
+	}
+
+	public int getPerson_no() {
+		return person_no;
+	}
+
+	public void setPerson_no(int person_no) {
+		this.person_no = person_no;
+	}
+
+	public String getAlba_seeker_img() {
+		return alba_seeker_img;
+	}
+
+	public void setAlba_seeker_img(String alba_seeker_img) {
+		this.alba_seeker_img = alba_seeker_img;
+	}
+
+	public String getAlba_seeker_nick() {
+		return alba_seeker_nick;
+	}
+
+	public void setAlba_seeker_nick(String alba_seeker_nick) {
+		this.alba_seeker_nick = alba_seeker_nick;
+	}
+
+	public int getAlba_seeker_love() {
+		return alba_seeker_love;
+	}
+
+	public void setAlba_seeker_love(int alba_seeker_love) {
+		this.alba_seeker_love = alba_seeker_love;
+	}
+
+	public int getAlba_seeker_age() {
+		return alba_seeker_age;
+	}
+
+	public void setAlba_seeker_age(int alba_seeker_age) {
+		this.alba_seeker_age = alba_seeker_age;
+	}
+
+	public String getAlba_seeker_tel() {
+		return alba_seeker_tel;
+	}
+
+	public void setAlba_seeker_tel(String alba_seeker_tel) {
+		this.alba_seeker_tel = alba_seeker_tel;
+	}
+
+	public String getAlba_seeker_introduce() {
+		return alba_seeker_introduce;
+	}
+
+	public void setAlba_seeker_introduce(String alba_seeker_introduce) {
+		this.alba_seeker_introduce = alba_seeker_introduce;
+	}
+
+	public String getAlba_seeker_gender() {
+		return alba_seeker_gender;
+	}
+
+	public void setAlba_seeker_gender(String alba_seeker_gender) {
+		this.alba_seeker_gender = alba_seeker_gender;
+	}
+
+	public Date getAlba_seeker_date() {
+		return alba_seeker_date;
+	}
+
+	public void setAlba_seeker_date(Date alba_seeker_date) {
+		this.alba_seeker_date = alba_seeker_date;
+	}
+
+	public int getAlba_seeker_hirecount() {
+		return alba_seeker_hirecount;
+	}
+
+	public void setAlba_seeker_hirecount(int alba_seeker_hirecount) {
+		this.alba_seeker_hirecount = alba_seeker_hirecount;
+	}
+
+	public int getAlba_seeker_feature_category_no() {
+		return alba_seeker_feature_category_no;
+	}
+
+	public void setAlba_seeker_feature_category_no(int alba_seeker_feature_category_no) {
+		this.alba_seeker_feature_category_no = alba_seeker_feature_category_no;
+	}
+	
+}
+
+이미지 하나 올리기
+controller
+	@RequestMapping("/alba/apply/resume")
+	public String resume(Model model,
+			@RequestParam(value ="alba_seeker_img", required = false) MultipartFile file,
+			HttpServletRequest request) throws Exception {
+		
+		String alba_seeker_img = "";
+
+		if(file != null) {
+		
+			String name = file.getOriginalFilename();
+			String fileName = name.substring(name.lastIndexOf("\\")+1);
+			
+			int seq = albaService.selectAlbaSeekerNo() + 1;
+			String uuid = seq + "img";
+			
+			String fullPath="C:\\Users\\minju\\Dropbox\\Kimminju\\Spring\\WorkSpace\\Carrot\\src\\main\\webapp\\resources\\alba_seeker_img" + File.separator + uuid + "_" + fileName;
+			file.transferTo(new File(fullPath));
+			
+			alba_seeker_img = uuid + "_" + fileName;
+		}
+	// alba_seeker_img 값을 디비에 저장
+	
+jsp
+<input type="file" max="1" name="alba_seeker_img" accept="image/*">
+
+career 테이블 수정
+alter table career drop constraint fk_career_alba_seeker_no;
+alter table career rename column alba_seeker_no to person_no;
+alter table career add constraint fk_career_person_no foreign key(person_no) references person(person_no);
+-- 이거 입력
+
+career vo
+
+package vo.career;
+
+public class CareerVO {
+
+	private int career_no; // 경력 번호
+	private int person_no; // 회원 번호
+	private String career_place; // 일한 곳
+	private String career_date_start; // 일한 기간의 시작 날짜
+	private String career_date_end; // 일한 기간의 종료 날짜
+	private String career_content; // 상세 내용
+	
+	public CareerVO() {
+		
+	}
+	
+	public CareerVO(int career_no, int person_no, String career_place, String career_date_start, String career_date_end, String career_content) {
+		this.career_no=career_no;
+		this.person_no=person_no;
+		this.career_place=career_place;
+		this.career_date_start=career_date_start;
+		this.career_date_end=career_date_end;
+		this.career_content=career_content;
+	}
+
+	public CareerVO(int person_no, String career_place, String career_date_start, String career_date_end, String career_content) {
+		this.person_no=person_no;
+		this.career_place=career_place;
+		this.career_date_start=career_date_start;
+		this.career_date_end=career_date_end;
+		this.career_content=career_content;
+	}
+
+	public int getCareer_no() {
+		return career_no;
+	}
+
+	public void setCareer_no(int career_no) {
+		this.career_no = career_no;
+	}
+
+	public int getPerson_no() {
+		return person_no;
+	}
+
+	public void setPerson_no(int person_no) {
+		this.person_no = person_no;
+	}
+
+	public String getCareer_place() {
+		return career_place;
+	}
+
+	public void setCareer_place(String career_place) {
+		this.career_place = career_place;
+	}
+
+	public String getCareer_date_start() {
+		return career_date_start;
+	}
+
+	public void setCareer_date_start(String career_date_start) {
+		this.career_date_start = career_date_start;
+	}
+
+	public String getCareer_date_end() {
+		return career_date_end;
+	}
+
+	public void setCareer_date_end(String career_date_end) {
+		this.career_date_end = career_date_end;
+	}
+
+	public String getCareer_content() {
+		return career_content;
+	}
+
+	public void setCareer_content(String career_content) {
+		this.career_content = career_content;
+	}
+	
+}
+
+알바 지원서, 알바 경력 등록 구현 완료
+
+6/19
+재빈	
+테이블 수정
+biz_review 테이블 biz_review_category 컬럼 데이터 타입 varchar2(50) 으로 바꿈 vo도 수정 int -> String
+biz_menu 테이블에 biz_menu_img  - varchar2(50) 컬럼 추가  - > biz_menuVO 도 수정 예정
+
+6/20
+만듀
+코드 병합
+알바 지원서 수정 거의 다만듬
+^^
+
+6/20
+아스트로보이
+
+판매내역, 구매내역 완료  <--- 병합된거에 최신화한거 올렸습니다
+
+비즈프로필 링크 연결 준비중ㅋㅋ..
+
+6/21
+민츄
+insert into product_img values(product_img_seq.nextval, 'img1.jpg',1);
+insert into product_img values(product_img_seq.nextval, 'img2.jpg',2);
+insert into product_img values(product_img_seq.nextval, 'img3.jpg',2);
+insert into product_img values(product_img_seq.nextval, 'img4.jpg', 3);
+샘플데이터 추가
+
+중고 상품 사진 출력 수정
+알바 지원서 수정 구현
+회원가입시 사진 등록 구현
+프로필 사진 수정 구현
